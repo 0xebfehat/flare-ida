@@ -38,8 +38,14 @@ import re
 UNKNOWN = "??"
 MAX_STR_DISPLAY_LEN = 20
 
+try:
+    long        # Python 2
+except NameError:
+    long = int  # Python 3
+
 class Objc2Analyzer():
     def __init__(self):
+        #logging.basicConfig(level=logging.DEBUG) # Set Log Level
         self.magicMask64 = 0xabbadabbad000000
         self.magicMask32 = 0xabba0000
         self.magicMaskMask64 = 0xffffffffffff0000
@@ -544,6 +550,7 @@ class Objc2Analyzer():
                 sel = argv[1]
             if sel & magicMaskMask == magicMask:
                 selXref, sel = userData["magicVals"][sel & 0xffff]
+                logging.debug("address: %x" % address)
                 logging.debug("found magic sel used @%s: %s" %
                               (eh.hexString(address), eh.hexString(sel)))
             selName = idc.get_name(sel, idc.ida_name.GN_VISIBLE)
@@ -896,9 +903,9 @@ class Objc2Analyzer():
         elif eh.arch == unicorn.UC_ARCH_ARM64:
             userData["patchedSelRefs"][selXref] = (reg, 4)
             if funcVA - selXref < 0:
-                patchVal = (((funcVA - selXref) / 4) & 0xffffff) | 0x97000000
+                patchVal = ((int)((funcVA - selXref) / 4) & 0xffffff) | 0x97000000
             else:
-                patchVal = ((funcVA - selXref) / 4) | 0x94000000
+                patchVal = (int)((funcVA - selXref) / 4) | 0x94000000
             idc.patch_dword(selXref, patchVal)
             self.fixedSelXRefs.append(selXref)
             logging.debug("selector xref fixed!")
